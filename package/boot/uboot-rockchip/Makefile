@@ -68,11 +68,25 @@ define U-Boot/rockpro64-rk3399
   ATF:=rk3399_bl31.elf
 endef
 
+#RK3568 boards
+
+define U-Boot/nanopi-r5s-rk3568
+  BUILD_SUBTARGET:=armv8
+  NAME:=NanoPi R5S
+  BUILD_DEVICES:= \
+    friendlyarm_nanopi-r5s
+  DEPENDS:=+PACKAGE_u-boot-nanopi-r5s-rk3568:arm-trusted-firmware-rk3568
+  PKG_BUILD_DEPENDS:=arm-trusted-firmware-rockchip-vendor
+  ATF:=rk3568_bl31_v1.34.elf
+  DDR:=rk3568_ddr_1560MHz_v1.13.bin
+endef
+
 UBOOT_TARGETS := \
   nanopi-r4s-rk3399 \
   rock-pi-4-rk3399 \
   rockpro64-rk3399 \
-  nanopi-r2s-rk3328
+  nanopi-r2s-rk3328 \
+  nanopi-r5s-rk3568
 
 UBOOT_CONFIGURE_VARS += USE_PRIVATE_LIBGCC=yes
 
