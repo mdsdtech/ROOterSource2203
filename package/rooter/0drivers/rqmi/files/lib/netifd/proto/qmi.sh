@@ -127,8 +127,8 @@ proto_qmi_setup() {
 	#uqmi -s -d "$device" --set-device-operating-mode online > /dev/null 2>&1
 
 	# Set IP format
-	uqmi -s -d "$device" --set-data-format 802.3 > /dev/null 2>&1
-	uqmi -s -d "$device" --wda-set-data-format 802.3 > /dev/null 2>&1
+	#uqmi -s -d "$device" --set-data-format 802.3 > /dev/null 2>&1
+	#uqmi -s -d "$device" --wda-set-data-format 802.3 > /dev/null 2>&1
 	if [ $RAW -eq 1 ]; then
 		dataformat='"raw-ip"'
 	else
@@ -181,7 +181,6 @@ proto_qmi_setup() {
 		else
 			# registration_state is 'registration_denied' or 'unknown' or ''
 			log "Network registration failed (reason: '$registration_state')"
-			/usr/lib/rooter/luci/restart.sh $CURRMODEM 11 &
 		fi
 
 		proto_notify_error "$interface" NETWORK_REGISTRATION_FAILED
@@ -536,16 +535,22 @@ proto_qmi_setup() {
 					INTER=$CURRMODEM
 				fi
 			fi
-			ENB=$(uci -q get mwan3.wan$CURRMODEM.enabled)
-			if [ ! -z $ENB ]; then
-				if [ $CLB = "1" ]; then
-					uci set mwan3.wan$INTER.enabled=1
-				else
-					uci set mwan3.wan$INTER.enabled=0
-				fi
-				uci commit mwan3
-				/usr/sbin/mwan3 restart
+			uci set mwan3.wan$INTER.enabled=1
+			log "Check IPv6 Only"
+			if [ "$ipv6only" = "1" ]; then
+				uci set mwan3.wan$INTER.family='ipv6'
+				uci delete mwan3.wan$INTER.track_ip
+				uci add_list mwan3.wan$INTER.track_ip='ipv6.google.com'
+				uci set mwan3.CLAT$INTER.enabled=1
+				log "IPv6"
+			else
+				uci set mwan3.wan$INTER.family='ipv4'
+				uci delete mwan3.wan$INTER.track_ip
+				uci add_list mwan3.wan$INTER.track_ip='8.8.8.8'
+				uci set mwan3.CLAT$INTER.enabled=0
 			fi
+			uci commit mwan3
+			/usr/sbin/mwan3 restart
 		fi
 		rm -f /tmp/usbwait
 

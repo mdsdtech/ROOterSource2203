@@ -198,53 +198,24 @@ _proto_mbim_setup() {
 
 	get_connect
 
-	log "Checking PIN state"
-	tid=$((tid + 1))
-	umbim $DBG -n -t $tid -d $device pinstate
-	retq=$?
-	if [ $retq -eq 2 ]; then
-		log "PIN is required"
-		if [ ! -z $pincode ]; then
-			log "Sending PIN"
-			tid=$((tid + 1))
-			umbim $DBG -n -t $tid -d $device unlock "$pincode" 2>/dev/null
-			retq=$?
-			if [ $retq -ne 0 ]; then
-				log "PIN unlock failed"
-				exit 1
-			else
-				log "PIN unlocked"
-				sleep 3
-				CHKPORT=$(uci get modem.modem$CURRMODEM.commport)
-				if [ ! -z $CHKPORT ]; then
-					$ROOTER/common/gettype.sh $CURRMODEM
-				else
-					get_sub
-				fi
-			fi
-		else
-			log "PIN is missing in the profile"
-			exit 1
-		fi
-	else
-		log "PIN is not required"
-	fi
-
 	log "Register with network"
-	for i in $(seq 30); do
+	for i in $(seq 4); do
 		tid=$((tid + 1))
 		REG=$(umbim $DBG -n -t $tid -d $device registration)
 		retq=$?
 		[ $retq -ne 2 ] && break
+		log "Registering"
 		sleep 2
 	done
 	if [ $retq != 0 ]; then
 		if [ $retq != 4 ]; then
 			log "Subscriber registration failed"
 			proto_notify_error "$interface" NO_REGISTRATION
+			/usr/lib/rooter/luci/restart.sh $CURRMODEM 11 &
 			return 1
 		fi
 	fi
+	log "Registered"
 	MCCMNC=$(echo "$REG" | awk '/provider_id:/ {print $2}')
 	PROV=$(echo "$REG" | awk '/provider_name:/ {print $2}')
 	MCC=${MCCMNC:0:3}
@@ -326,6 +297,7 @@ _proto_mbim_setup() {
 	done
 	if [ $tidd -gt $tcnt ]; then
 		log "Failed to connect to network"
+		/usr/lib/rooter/luci/restart.sh $CURRMODEM 11
 		return 1
 	fi
 	log "Save Connect Data"
@@ -366,11 +338,12 @@ _proto_mbim_setup() {
 	fi
 
 	log "Connected, setting IP"
-
+	ipv6only="0"
 	if [ $enb = "1" ]; then
 		if [ -n "$IP6" -a -z "$IP" ]; then
 			log "Running IPv6-only mode"
 			nat46=1
+			ipv6only="1"
 		fi
 
 		if [[ $(echo "$IP6" | grep -o "^[23]") ]]; then
@@ -563,16 +536,22 @@ _proto_mbim_setup() {
 				INTER=$CURRMODEM
 			fi
 		fi
-		ENB=$(uci -q get mwan3.wan$CURRMODEM.enabled)
-		if [ ! -z $ENB ]; then
-			if [ $CLB = "1" ]; then
-				uci set mwan3.wan$INTER.enabled=1
-			else
-				uci set mwan3.wan$INTER.enabled=0
-			fi
-			uci commit mwan3
-			/usr/sbin/mwan3 restart
+		uci set mwan3.wan$INTER.enabled=1
+		log "Check IPv6 Only"
+		if [ "$ipv6only" = "1" ]; then
+			uci set mwan3.wan$INTER.family='ipv6'
+			uci delete mwan3.wan$INTER.track_ip
+			uci add_list mwan3.wan$INTER.track_ip='ipv6.google.com'
+			uci set mwan3.CLAT$INTER.enabled=1
+			log "IPv6"
+		else
+			uci set mwan3.wan$INTER.family='ipv4'
+			uci delete mwan3.wan$INTER.track_ip
+			uci add_list mwan3.wan$INTER.track_ip='8.8.8.8'
+			uci set mwan3.CLAT$INTER.enabled=0
 		fi
+		uci commit mwan3
+		/usr/sbin/mwan3 restart
 	fi
 	rm -f /tmp/usbwait
 
