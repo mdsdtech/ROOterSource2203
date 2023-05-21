@@ -297,7 +297,7 @@ end
 					document.getElementById('encrypted').innerHTML="";
 				}
 				reconn = rv.signal;
-				document.getElementById('signal').value=rv.signal;
+				document.getElementById('reconn').value=rv.reconn;
 				if ( reconn == "0" )
 				{
 					document.getElementById('signal').checked=false;
@@ -975,9 +975,8 @@ end
 		<td width="17%"><strong><%:Reconnection Attempts on Dropped Connection%></strong></td>
 		<td width="25%">
 			<select style="auto" name="reconn" id="reconn" onchange="reconnenable(this)">
-			<option value="0" selected="selected"><%:None%></option>
 			<option value="1"><%:1%></option>
-			<option value="5"><%:5%></option>
+			<option value="5" selected="selected"><%:5%></option>
 			<option value="99"><%:Continuous%></option>
 			</select>
 		<!--	<input type="checkbox" id="reconn" onclick="reconnenable(this)" /> -->
