@@ -155,6 +155,7 @@ check_apn() {
 	ATCMDD="AT+CGDCONT?;+CFUN?"
 	OX=$($ROOTER/gcom/gcom-locked "$COMMPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
 	CGDCONT2=$(echo $OX | grep "+CGDCONT: 2,")
+	CGDCONT0=$(echo $OX | grep "+CGDCONT: 0,")
 	if [ -z "$CGDCONT2" ]; then
 		ATCMDD="AT+CGDCONT=2,\"$IPVAR\",\"ims\""
 		OX=$($ROOTER/gcom/gcom-locked "$COMMPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
@@ -624,7 +625,7 @@ uci commit modem.modem$CURRMODEM
 						"1e0e" )
 							get_tty 02
 							mbimcport
-						;; 
+						;;
 						"2cb7" )
 							get_tty_fix 0
 							lua $ROOTER/common/modemchk.lua "$idV" "$idP" "$CPORT" "$CPORT"
@@ -807,13 +808,13 @@ if [ -n "$CHKPORT" ]; then
 		fi
 		exit 0
 	fi
-	
+
 	detect=$(uci -q get modem.modeminfo$CURRMODEM.detect)
 	if [ "$detect" = "1" ]; then
 		log "Stopped after detection"
 		exit 0
 	fi
-	
+
 	if [ -e /usr/lib/gps/gps.sh ]; then
 		/usr/lib/gps/gps.sh $CURRMODEM &
 	fi
@@ -907,33 +908,46 @@ if [ -n "$CHKPORT" ]; then
 			apndata=$(cat /tmp/apndata)" "
 		fi
 	fi
-	
+
 	apd=0
 	if [ -e /usr/lib/autoapn/apn.data ]; then
 		apd=1
 	fi
+	pdptype="ipv4v6"
+	IPVAR=$(uci -q get modem.modem$CURRMODEM.pdptype)
+	case "$IPVAR" in
+		"IP" )
+			pdptype="ipv4"
+		;;
+		"IPV6" )
+			pdptype="ipv6"
+		;;
+		"IPV4V6" )
+			pdptype="ipv4v6"
+		;;
+	esac
 	if [ "$autoapn" = "1" -a $apd -eq 1 ]; then
 		isplist=$(grep -F "$mcc6" '/usr/lib/autoapn/apn.data')
 		if [ -z "$isplist" ]; then
 			isplist=$(grep -F "$mcc5" '/usr/lib/autoapn/apn.data')
 			if [ -z "$isplist" ]; then
-				isplist="000000,$NAPN,Default,$NPASS,$CID,$NUSER,$NAUTH"
+				isplist="000000,$NAPN,Default,$NPASS,$CID,$NUSER,$NAUTH,$pdptype"
 				if [ ! -z "$NAPN2" ]; then
-					isplist=$isplist" 000000,$NAPN2,Default,$NPASS,$CID,$NUSER,$NAUTH"
+					isplist=$isplist" 000000,$NAPN2,Default,$NPASS,$CID,$NUSER,$NAUTH,$pdptype"
 				fi
 				if [ ! -z "$NAPN3" ]; then
-					isplist=$isplist" 000000,$NAPN3,Default,$NPASS,$CID,$NUSER,$NAUTH"
+					isplist=$isplist" 000000,$NAPN3,Default,$NPASS,$CID,$NUSER,$NAUTH,$pdptype"
 				fi
 			fi
 		fi
 	else
 		if [ -z "$apndata" ]; then
-			isplist=$apndata"000000,$NAPN,Default,$NPASS,$CID,$NUSER,$NAUTH"
+			isplist=$apndata"000000,$NAPN,Default,$NPASS,$CID,$NUSER,$NAUTH,$pdptype"
 			if [ ! -z "$NAPN2" ]; then
-				isplist=$isplist" 000000,$NAPN2,Default,$NPASS,$CID,$NUSER,$NAUTH"
+				isplist=$isplist" 000000,$NAPN2,Default,$NPASS,$CID,$NUSER,$NAUTH,$pdptype"
 			fi
 			if [ ! -z "$NAPN3" ]; then
-				isplist=$isplist" 000000,$NAPN3,Default,$NPASS,$CID,$NUSER,$NAUTH"
+				isplist=$isplist" 000000,$NAPN3,Default,$NPASS,$CID,$NUSER,$NAUTH,$pdptype"
 			fi
 		else
 			isplist=$apndata
@@ -986,7 +1000,7 @@ if [ ! -z $modis ]; then
 	fi
 fi
 
-for isp in $isplist 
+for isp in $isplist
 do
 	NAPN=$(echo $isp | cut -d, -f2)
 	NPASS=$(echo $isp | cut -d, -f4)
@@ -1007,7 +1021,7 @@ do
 	export SETPASS=$NPASS
 	export SETAUTH=$NAUTH
 	export PINCODE=$PINC
-	
+
 	uci set modem.modem$CURRMODEM.apn=$NAPN
 	uci set modem.modem$CURRMODEM.user=$NUSER
 	uci set modem.modem$CURRMODEM.passw=$NPASS
@@ -1074,7 +1088,7 @@ do
 		if [ -e $ROOTER/modem-led.sh ]; then
 			$ROOTER/modem-led.sh $CURRMODEM 2
 		fi
-		
+
 		if [ -e $ROOTER/connect/chkconn.sh ]; then
 			jkillall chkconn.sh
 			$ROOTER/connect/chkconn.sh $CURRMODEM &
@@ -1210,6 +1224,12 @@ do
 			ATCMDD="AT+CGACT=0,$CID"
 			OX=$($ROOTER/gcom/gcom-locked "$COMMPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
 			check_apn
+			if [ -n "$CGDCONT0" -a $CID != 0 ]; then
+				OX=$($ROOTER/gcom/gcom-locked "$COMMPORT" "run-at.gcom" "$CURRMODEM" "AT+CGATT=0")
+				OX=$($ROOTER/gcom/gcom-locked "$COMMPORT" "run-at.gcom" "$CURRMODEM" "AT+CGDCONT=0,\"IP\"")
+				OX=$($ROOTER/gcom/gcom-locked "$COMMPORT" "run-at.gcom" "$CURRMODEM" "AT+CGDCONT=0")
+				log "PDP Context 0 removed"
+			fi
 			ATCMDD="AT+CGPIAF=1,0,0,0;+XDNS=$CID,1;+XDNS=$CID,2"
 			OX=$($ROOTER/gcom/gcom-locked "$COMMPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
 			ATCMDD="AT+CGACT=1,$CID"

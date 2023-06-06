@@ -58,6 +58,7 @@ while IFS= read -r line; do
 	fi
 done < /usr/lib/country/mccdata
 
+apndata=""
 cfnd="0"
 if [ "$fnd" = "1" ]; then
 	tmp=$(echo "$ldata" | cut -d! -f2 )
@@ -84,19 +85,36 @@ if [ "$fnd" = "1" ]; then
 			if [ "$cauth" = "~" ]; then
 				cauth="0"
 			fi
+			cpdp=$(echo "$ispdata" | cut -d, -f8)
+			if [ "$cpdp" = "~" -o "$cpdp" = "0" ]; then
+				cpdp="IP"
+			else
+				case $cpdp in
+					"1" )
+					cpdp="IP"
+					;;
+					"2" )
+					cpdp="IPV6"
+					;;
+					"3" )
+					cpdp="IPV4V6"
+					;;
+				esac
+			fi
 			size=${#mnc} 
 			if [ "$size" = "3" ]; then
 				cmnc=$mnc6
 			else
 				cmnc=$mnc5
 			fi
-			if [ "$mnc" = "$cmnc" -a "$apn" = "$capn" ]; then
+			
+			if [ "$mnc" = "$cmnc" ]; then
+				apndata=$apndata"$mcc","$capn","Default","$cuser","$ccid","$cpass","$cauth","$cpdp "
 				cfnd="1"
-				break
 			fi
 		done
 		if [ "$cfnd" = "1" ]; then
-			apndata="$mcc","$apn","$cname","$cuser","$ccid","$cpass","$cauth"
+			#apndata="$mcc","$apn","$cname","$cuser","$ccid","$cpass","$cauth"
 			echo "$apndata" > /tmp/apndata
 		fi
 	fi

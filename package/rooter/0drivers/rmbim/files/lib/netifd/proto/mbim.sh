@@ -48,21 +48,25 @@ get_connect() {
 	auth=$NAUTH
 	pincode=$PINC
 
-	if [ "$PDPT" = 0 ]; then
-		ipt=""
+	if [ "$pipv4" = "1" -a "$creg" = "5" ]; then
+		ipt="ipv4:"
 	else
-		IPVAR=$(uci -q get modem.modem$CURRMODEM.pdptype)
-		case "$IPVAR" in
-			"IP" )
-				ipt="ipv4:"
-			;;
-			"IPV6" )
-				ipt="ipv6:"
-			;;
-			"IPV4V6" )
-				ipt="ipv4v6:"
-			;;
-		esac
+		if [ "$PDPT" = 0 ]; then
+			ipt=""
+		else
+			IPVAR=$(uci -q get modem.modem$CURRMODEM.pdptype)
+			case "$IPVAR" in
+				"IP" )
+					ipt="ipv4:"
+				;;
+				"IPV6" )
+					ipt="ipv6:"
+				;;
+				"IPV4V6" )
+					ipt="ipv4v6:"
+				;;
+			esac
+		fi
 	fi
 }
 
@@ -203,8 +207,6 @@ _proto_mbim_setup() {
 		$ROOTER/connect/get_profile.sh $CURRMODEM
 	fi
 
-	get_connect
-
 	log "Register with network"
 	for i in $(seq 4); do
 		tid=$((tid + 1))
@@ -223,6 +225,15 @@ _proto_mbim_setup() {
 		fi
 	fi
 	log "Registered"
+	
+	COMMPORT=$(uci get modem.modem$CURRMODEM.commport)
+	ATCMDD="at+creg?"
+	OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$COMMPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
+	REGV=$(echo "$OX" | grep -o "+CREG: [0-2],[0-5]")
+	creg=$(echo "$REGV" | cut -d, -f2)
+	pipv4=$(uci -q get profile.roaming.ipv4)
+	get_connect
+	
 	MCCMNC=$(echo "$REG" | awk '/provider_id:/ {print $2}')
 	PROV=$(echo "$REG" | awk '/provider_name:/ {print $2}')
 	MCC=${MCCMNC:0:3}
@@ -250,6 +261,24 @@ _proto_mbim_setup() {
 		CID=$(echo $isp | cut -d, -f5)
 		NUSER=$(echo $isp | cut -d, -f6)
 		NAUTH=$(echo $isp | cut -d, -f7)
+		if [ "$pipv4" = "1" -a "$creg" = "5" ]; then
+			ipt="ipv4:"
+			log "Roaming"
+		else
+			log "Not Roaming"
+			IPVAR=$(echo $isp | cut -d, -f8)
+			case "$IPVAR" in
+				"IP" )
+					ipt="ipv4:"
+				;;
+				"IPV6" )
+					ipt="ipv6:"
+				;;
+				"IPV4V6" )
+					ipt="ipv4v6:"
+				;;
+			esac
+		fi
 		if [ "$NPASS" = "nil" ]; then
 			NPASS="NIL"
 		fi
