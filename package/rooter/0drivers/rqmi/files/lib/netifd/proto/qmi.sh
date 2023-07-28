@@ -20,8 +20,6 @@ handle_ip() {
 	fi
 }
 
-log "Starting QMI"
-
 proto_qmi_init_config() {
 	available=1
 	no_device=1
@@ -45,6 +43,9 @@ proto_qmi_init_config() {
 }
 
 proto_qmi_setup() {
+
+	log "Starting QMI"
+
 	local interface="$1"
 	local dataformat connstat plmn_mode mcc mnc
 	local device apn auth username password pincode delay modes pdptype
@@ -192,7 +193,18 @@ proto_qmi_setup() {
 
 		proto_notify_error "$interface" NETWORK_REGISTRATION_FAILED
 		proto_block_restart "$interface"
-		/usr/lib/rooter/luci/restart.sh $CURRMODEM 11 &
+		if [ -e /etc/config/wizard ]; then
+			wiz=$(uci -q get wizard.basic.wizard)
+			if [ "$wiz" = "1" ]; then
+				PID=$(ps |grep "chkconn.sh" | grep -v grep |head -n 1 | awk '{print $1}')
+				kill -9 $PID
+				ifdown wan1
+			else
+				/usr/lib/rooter/luci/restart.sh $CURRMODEM 11 1
+			fi
+		else
+			/usr/lib/rooter/luci/restart.sh $CURRMODEM 11 1
+		fi
 		return 1
 	done
 
@@ -207,25 +219,22 @@ proto_qmi_setup() {
 			
 	isplist=$(uci -q get modem.modeminfo$CURRMODEM.isplist)
 	apn2=$(uci -q get modem.modeminfo$CURRMODEM.apn2)
-	for isp in $isplist 
+	for wcnt in 1 2 3
+	do
+		for isp in $isplist 
 		do
 			NAPN=$(echo $isp | cut -d, -f2)
 			NPASS=$(echo $isp | cut -d, -f4)
 			CID=$(echo $isp | cut -d, -f5)
 			NUSER=$(echo $isp | cut -d, -f6)
 			NAUTH=$(echo $isp | cut -d, -f7)
-			if [ "$NPASS" = "nil" ]; then
-				NPASS=""
+			if [ "$NPASS" = "nil" -o "$NPASS" = "" ]; then
+				NPASS="NIL"
 			fi
-			if [ "$NUSER" = "nil" ]; then
-				NUSER=""
+			if [ "$NUSER" = "nil" -o "$NUSER" = "" ]; then
+				NUSER="NIL"
 			fi
-			if [ "$NPASS" = "NIL" ]; then
-				NPASS=""
-			fi
-			if [ "$NUSER" = "NIL" ]; then
-				NUSER=""
-			fi
+			
 			if [ "$NAUTH" = "nil" ]; then
 				NAUTH="0"
 			fi
@@ -251,6 +260,7 @@ proto_qmi_setup() {
 			pdptype="ipv4v6"
 			if [ "$pipv4" = "1" -a "$creg" = "5" ]; then
 				pdptype="ipv4"
+				IPVAR="IP"
 				log "Roaming"
 			else
 				log "Not Roaming"
@@ -266,6 +276,14 @@ proto_qmi_setup() {
 					;;
 				esac
 			fi
+			ATCMDD="AT+CGDCONT=$CID,\"$IPVAR\",\"$NAPN\""
+			OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$COMMPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
+			OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$COMMPORT" "run-at.gcom" "$CURRMODEM" "AT+CFUN=$CFUNOFF")
+			OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$COMMPORT" "run-at.gcom" "$CURRMODEM" "AT+CFUN=1")
+			sleep 3
+			ATCMDD="AT+CGDCONT?"
+			OX=$($ROOTER/gcom/gcom-locked "/dev/ttyUSB$COMMPORT" "run-at.gcom" "$CURRMODEM" "$ATCMDD")
+			log "$OX"
 
 			pdptype=$(echo "$pdptype" | awk '{print tolower($0)}')
 			[ "$pdptype" = "ip" -o "$pdptype" = "ipv6" -o "$pdptype" = "ipv4v6" ] || pdptype="ip"
@@ -350,40 +368,12 @@ proto_qmi_setup() {
 			if [ $conn -eq 1 ]; then
 				break;
 			fi
-			log "Stop Network"
-			uqmi -s -d "$device" --stop-network 0xffffffff --autoconnect > /dev/null 2>&1
-			uqmi -s -d "$device" --sync > /dev/null 2>&1
-			uqmi -s -d "$device" --network-register > /dev/null 2>&1
-			sleep 3
-			registration_timeout=0
-			registration_state=""
-			while true; do
-				registration_state=$(uqmi -s -d "$device" --get-serving-system 2>/dev/null | jsonfilter -e "@.registration" 2>/dev/null)
-				log "Registration State : $registration_state"
-				[ "$registration_state" = "registered" ] && break
 
-				if [ "$registration_state" = "searching" ] || [ "$registration_state" = "not_registered" ]; then
-					if [ "$registration_timeout" -lt "$timeout" ] || [ "$timeout" = "0" ]; then
-						[ "$registration_state" = "searching" ] || {
-							log "Device stopped network registration. Restart network registration"
-							uqmi -s -d "$device" --network-register > /dev/null 2>&1
-						}
-						let registration_timeout++
-						sleep 1
-						continue
-					fi
-					log "Network registration failed, registration timeout reached"
-				else
-					# registration_state is 'registration_denied' or 'unknown' or ''
-					log "Network registration failed (reason: '$registration_state')"
-				fi
-
-				proto_notify_error "$interface" NETWORK_REGISTRATION_FAILED
-				proto_block_restart "$interface"
-				/usr/lib/rooter/luci/restart.sh $CURRMODEM 11 &
-				return 1
-			done
 		done
+		if [ $conn -eq 1 ]; then
+			break;
+		fi
+	done
 
 	if [ $conn -eq 0 ]; then
 		proto_notify_error "$interface" CALL_FAILED

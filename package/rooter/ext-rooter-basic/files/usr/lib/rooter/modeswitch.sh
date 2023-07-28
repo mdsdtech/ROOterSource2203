@@ -148,6 +148,7 @@ change_bconf() {
 #
 # Add Modem and connect
 #
+#log "$ACTION"
 if [ "$ACTION" = add ]; then
 	bootdelay
 	CNTR=0
@@ -159,6 +160,7 @@ if [ "$ACTION" = add ]; then
 			break
 		fi
 	done
+	
 	find_usb_attrs
 
 	if echo $DEVICENAME | grep -q ":" ; then
@@ -197,6 +199,21 @@ if [ "$ACTION" = add ]; then
 		exit 0
 	fi
 
+	
+	DELAY=1
+	if [ -f /tmp/usbwait ]; then
+		log "Delay for previous modem"
+		while [ -f /tmp/usbwait ]; do
+			sleep 1
+			let DELAY=$DELAY+1
+			if [ $DELAY -gt 25 ]; then
+				break
+			fi
+		done
+	fi
+	echo "1" > /tmp/usbwait
+
+
 	bNumConfs=$(cat /sys/bus/usb/devices/$DEVICENAME/bNumConfigurations)
 	bNumIfs=$(cat /sys/bus/usb/devices/$DEVICENAME/bNumInterfaces)
 
@@ -206,9 +223,6 @@ if [ "$ACTION" = add ]; then
 	$ROOTER/proto.sh $uVid $uPid $DEVICENAME 0
 	source /tmp/proto
 	rm -f /tmp/proto
-	#cat /sys/kernel/debug/usb/devices > /tmp/wdrv
-	#lua $ROOTER/protofind.lua $uVid $uPid 0
-	#retval=$?
 
 	if [ -e /etc/config/mjpg-streamer ]; then
 		if [ $retval -eq 99 ]; then
@@ -242,18 +256,7 @@ if [ "$ACTION" = add ]; then
 		fi
 	fi
 
-	DELAY=1
-	if [ -f /tmp/usbwait ]; then
-		log "Delay for previous modem"
-		while [ -f /tmp/usbwait ]; do
-			sleep 1
-			let DELAY=$DELAY+1
-			if [ $DELAY -gt 15 ]; then
-				break
-			fi
-		done
-	fi
-	echo "1" > /tmp/usbwait
+
 	
 	source /tmp/variable.file
 	source /tmp/modcnt
@@ -261,6 +264,7 @@ if [ "$ACTION" = add ]; then
 
 	reinsert=0
 	find_device $DEVICENAME
+log "Device $DEVICENAME"
 	if [ $retresult -gt 0 ]; then
 		ACTIVE=$(uci get modem.modem$retresult.active)
 		if [ $ACTIVE = 1 ]; then
@@ -273,6 +277,8 @@ if [ "$ACTION" = add ]; then
 				reinsert=1
 				CURRMODEM=$retresult
 				MODSTART=$retresult
+				uci set modem.modem$CURRMODEM.empty=0
+				uci commit modem
 				WWANX=$(uci get modem.modem$CURRMODEM.wwan)
 				if [ -n "$WWANX" ]; then
 					WWAN=$WWANX
@@ -283,10 +289,10 @@ if [ "$ACTION" = add ]; then
 					WDMN=$WDMNX
 					save_variables
 				fi
-			else
-				display_top; display "Reinsert of different Modem not allowed"; display_bottom
-				rm -f /tmp/usbwait
-				exit 0
+			#else
+				#display_top; display "Reinsert of different Modem not allowed"; display_bottom
+				#rm -f /tmp/usbwait
+				#exit 0
 			fi
 		fi
 	fi
@@ -295,7 +301,7 @@ if [ "$ACTION" = add ]; then
 
 	if [ $MODSTART -gt $MODCNT ]; then
 		display_top; display "Exceeded Maximun Number of Modems"; display_bottom
-		exit 0
+		#exit 0
 	fi
 
 	if [ $reinsert = 0 ]; then
@@ -437,6 +443,10 @@ if [ "$ACTION" = add ]; then
 	PID=$(ps |grep "chkconn.sh" | grep -v grep |head -n 1 | awk '{print $1}')
 	kill -9 $PID
 
+	if [ -e /etc/config/wizard]; then
+		uci set wizard.basic.detect="0"
+		uci commit wizard
+	fi
 	
 #
 # Handle specific modem models
@@ -511,11 +521,13 @@ if [ "$ACTION" = remove ]; then
 	if echo $DEVICENAME | grep -q ":" ; then
 		exit 0
 	fi
+	log "Remove $DEVICENAME"
 	find_device $DEVICENAME
 	if [ $retresult -gt 0 ]; then
 		IDP=$(uci get modem.modem$retresult.idP)
 		IDV=$(uci get modem.modem$retresult.idV)
-		if [ $uVid = $IDV ]; then
+		#if [ $uVid = $IDV ]; then
+		if [ 0 -eq 1 ]; then
 			exit 0
 		else
 			INTER=$(uci get modem.modem$retresult.inter)

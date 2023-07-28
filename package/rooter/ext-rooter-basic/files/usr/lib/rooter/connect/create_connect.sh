@@ -1,4 +1,4 @@
-#!/bin/sh
+ #!/bin/sh
 
 ROOTER=/usr/lib/rooter
 ROOTER_LINK="/tmp/links"
@@ -268,7 +268,9 @@ chktelitmbim() {
 
 chkT77() {
 	T77=0
-	if [ $idV = 413c -a $idP = 81d7 ]; then
+	if [ $idV = 1e2d ]; then
+		T77=1
+	elif [ $idV = 413c -a $idP = 81d7 ]; then
 		T77=1
 	elif [ $idV = 413c -a $idP = 81d8 ]; then
 		T77=1
@@ -286,7 +288,9 @@ chkT77() {
 
 chkraw() {
 	RAW=0
-	if [ $idV = 03f0 -a $idP = 0857 ]; then
+	if [ $idV = 1e2d ]; then
+		RAW=1
+	elif [ $idV = 03f0 -a $idP = 0857 ]; then
 		RAW=1
 	elif [ $idV = 1bc7 -a $idP = 1900 ]; then
 		RAW=1
@@ -413,7 +417,7 @@ mbimcport() {
 CURRMODEM=$1
 RECON=$2
 SIERRAID=0
-
+log "Start Connection"
 MAN=$(uci -q get modem.modem$CURRMODEM.manuf)
 MOD=$(uci -q get modem.modem$CURRMODEM.model)
 PROT=$(uci -q get modem.modem$CURRMODEM.proto)
@@ -707,6 +711,17 @@ if [ -e $ROOTER/connect/preconnect.sh ]; then
 	fi
 fi
 
+if [ -e /etc/config/wizard ]; then
+	wiz=$(uci -q get wizard.basic.wizard)
+	if [ "$wiz" = "1" ]; then
+		uci set wizard.basic.detect="2"
+		uci commit wizard
+		exit 0
+	fi
+	uci set wizard.basic.detect="1"
+	uci commit wizard
+fi
+
 if $QUECTEL; then
 	if [ "$RECON" != "2" ]; then
 		ATCMDD="AT+CNMI?"
@@ -805,6 +820,10 @@ if [ -n "$CHKPORT" ]; then
 		log " SIM Error"
 		if [ -e $ROOTER/simerr.sh ]; then
 			$ROOTER/simerr.sh $CURRMODEM
+		fi
+		if [ -e /etc/config/wizard]; then
+			uci set wizard.basic.detect="2"
+			uci commit wizard
 		fi
 		exit 0
 	fi

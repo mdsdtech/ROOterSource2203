@@ -7,56 +7,59 @@ log() {
 
 checktime() {
 	SHOUR=$(uci -q get custom.texting.time)
+	if [ "$SHOUR" = "-1" ]; then
+		istime="1"
+		return
+	fi
 	EHOUR=`expr $SHOUR + 1`
 	if [ $EHOUR -gt 95 ]; then
 		EHOUR=0
 	fi
 	HOUR=`expr $SHOUR / 4`
-	let "TH = $HOUR * 4"
-	let "TMP1 = $SHOUR - $TH"
-	let "MIN = $TMP1 * 15"
+	let "TH=$HOUR*4"
+	let "TMP1=$SHOUR-$TH"
+	let "MIN=$TMP1*15"
 	shour=$HOUR
 	smin=$MIN
 	
 	HOUR=`expr $EHOUR / 4`
-	let "TH = $HOUR * 4"
-	let "TMP1 = $EHOUR - $TH"
-	let "MIN = $TMP1 * 15"
+	let "TH=$HOUR*4"
+	let "TMP1=$EHOUR-$TH"
+	let "MIN=$TMP1*15"
 	ehour=$HOUR
 	emin=$MIN
 	
 	chour=$(date +%H)
 	cmin=$(date +%M)
 	if [ $shour -gt $chour ]; then
-		flag="0"
+		istime="0"
 	else
 		if [ $shour -eq $chour ]; then
 			if [ $smin -le $cmin ]; then
-				flag="1"
+				istime="1"
 			else
-				flag="0"
+				istime="0"
 			fi
 		else
-			flag="1"
+			istime="1"
 		fi
 	fi
 
-	if [ $flag = "1" ]; then
+	if [ $istime = "1" ]; then
 		if [ $ehour -lt $chour ]; then
-			flag="0"
+			istime="0"
 		else
 			if [ $ehour -eq $chour ]; then
 				if [ $emin -lt $cmin ]; then
-					flag="0"
+					istime="0"
 				else
-					flag="1"
+					istime="1"
 				fi
 			else
-				flag="1"
+				istime="1"
 			fi
 		fi
 	fi
-	echo $flag
 }
 
 getbw() {
@@ -69,7 +72,7 @@ getbw() {
 				return
 			fi
 			read -r line
-			used=$line
+			used="$line"
 			return
 		done < /tmp/bwdata
 	else
@@ -78,22 +81,26 @@ getbw() {
 }
 
 checkamt() {
-	istime=$(checktime)
+	checktime
 	if [ $istime = '1' ]; then
 		incr=$(uci -q get custom.texting.increment)
+		prev=$(uci -q get custom.texting.used)
 		getbw
+		if [ -z "$prev" ]; then
+			prev=0
+		fi
 		/usr/lib/bwmon/datainc.lua $prev $incr $used
 		source /tmp/bwinc
-		uci set custom.texting.used=$prev
+		uci set custom.texting.used="$prev"
 		uci commit custom
-		echo $runn
+		running=$runn
 	else
-		echo "0"
+		running="0"
 	fi
 }
 
 checkper() {
-	istime=$(checktime)
+	checktime
 	if [ $istime = '1' ]; then
 		prev=$(uci -q get custom.texting.used)
 		per=$(uci -q get custom.texting.percent)
@@ -106,16 +113,16 @@ checkper() {
 				uci set custom.bwallocate.persent="1"
 				uci commit custom
 			fi
-			echo $runn
+			running=$runn
 		else
-			echo "0"
+			running="0"
 		fi
 	else
-		echo "0"
+		running="0"
 	fi
 }
 
-delay=900
+delay=10
 while true
 do
 	EN=$(uci -q get custom.bwallocate.enabled)
@@ -127,20 +134,24 @@ do
 			daysdate="${daysdate#"${daysdate%%[!0]*}"}"
 			remain=$((daysdate % days))
 			if [ $remain -eq 0 ]; then
-				running=$(checktime)
+				checktime
+				running=$istime
 			else
 				running="0"
 			fi
 		else
 			if [ $MT = '1' ]; then
-				running=$(checkamt)
+#log "Check Amt"
+				checkamt
 			else
-				running=$(checkper)
+#log "Check Percent"
+				checkper
 			fi
 		fi
 		if [ $running = "1" ]; then
 			EN=$(uci -q get custom.texting.text)
 			if [ $EN = "1" ]; then
+#log "Text"
 				/usr/lib/bwmon/dotext.sh &
 				sleep $delay
 			fi

@@ -154,9 +154,9 @@
 		"custom": {
 			"name": {
 				"model": "Huastlink HC952"
-			}
-		},
-		"files": "/hc952/files/"	
+			},
+			"files": "/hc952/files/"
+		}	
 	},
 	"HC841": {
 		"details": "Huastlink HC841",
@@ -165,12 +165,12 @@
 		"config": ".config_hc841",
 		"image": "openwrt-ramips-mt7621-hc841-squashfs-sysupgrade.bin",
 		"imagepath": "/ramips/mt7621/",
-		"mod": "Huastlink-HC841",
+		"mod": "Huastlink-HC851-HC841",
 		"ext": "-upgrade.bin",
 		"addons": ["uboot16.bin", "HC952841-Flash.pdf"],
 		"custom": {
 			"name": {
-				"model": "Huastlink HC841"
+				"model": "Huastlink HC851/HC841"
 			},
 			"files": "/hc952/files/"
 		}
@@ -271,6 +271,18 @@
 		"image": "openwrt-ramips-mt7621-dualq_H721-16m-squashfs-sysupgrade.bin",
 		"imagepath": "/ramips/mt7621/",
 		"mod": "DualQ-H721",
+		"ext": "-upgrade.bin",
+		"addons": ["readme.pdf", "readmerecovery.txt"]
+	},
+	"H721AX": {
+		"details": "DualQ H721AX",
+		"type": "1",
+		"build": "2203",
+		"config": ".config_h721ax",
+		"package": "ext-mk01k21",
+		"image": "openwrt-ramips-mt7621-dual-q_h721-squashfs-sysupgrade.bin",
+		"imagepath": "/ramips/mt7621/",
+		"mod": "DualQ-H721AX",
 		"ext": "-upgrade.bin",
 		"addons": ["readme.pdf", "readmerecovery.txt"]
 	},
@@ -497,5 +509,24 @@
 			},
 			"files": "/huasifei/files1208/"	
 		}
+	},
+	"MT1300": {
+		"details": "Gl.iNet MT1300",
+		"type": "1",
+		"build": "2203",
+		"config": ".config_mt1300",
+		"image": "openwrt-ramips-mt7621-glinet_gl-mt1300-squashfs-sysupgrade.bin",
+		"imagepath": "/ramips/mt7621/",
+		"mod": "Gl.iNet-MT1300",
+		"ext": "-upgrade.bin",
+		"addons": ["readme.pdf", "glinet.txt"]
+	},
+	"Z2101AX": {
+		"type": "1",
+		"config": ".config_z2101ax",
+		"imagepath": "/ramips/mt7621/",
+		"mod": "Z2101AX",
+		"image": "openwrt-ramips-mt7621-zbliink_zbt-z2101ax-squashfs-sysupgrade.bin",
+		"ext": "-upgrade.bin"
 	}
 }

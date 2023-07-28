@@ -72,16 +72,21 @@ if file ~= nil then
 	dwn = calc(tonumber(dwn))
 	up = calc(tonumber(up))
 	total = calc(tonumber(total))
-	print(ktotal, kdwn, kup)
 	dataline = lin .. "|" .. dwn .. "|" .. up .. "|" .. total
 	print(dataline)
 	monline[lin] = dataline
-	monlist[0] = lin
+	monlist[1] = lin
 	ksize = 1
 end
-k = 1
+monlist[0] = "first"
+--
+-- numeric data
+
+k = 2
 tfile = io.open(monthly, "r")
 if tfile ~= nil then
+
+
 	ksize = tfile:read("*line")
 	ksize = tostring(tonumber(ksize) + 1)
 	kdwn1 = tfile:read("*line")
@@ -93,6 +98,7 @@ if tfile ~= nil then
 	ktotal1 = tfile:read("*line")
 	ktotal1=ConBytes(ktotal1)
 	ktotal = (ktotal1 + ktotal)
+
 	repeat
 		line = tfile:read("*line")
 		if line == nil then
@@ -110,18 +116,17 @@ end
 if k > 30 then
 	k = 30
 end
+k = k -1
 
 tfile = io.open(monthly, "w")
 tfile:write(tostring(k), "\n")
 tfile:write(calc(kdwn), "\n")
 tfile:write(calc(kup), "\n")
 tfile:write(calc(ktotal), "\n")
-for j = 0,k-1
+for j = 1,k
 do
 	lin = monlist[j]
 	dataline = monline[lin]
-	print(dataline)
 	tfile:write(dataline, "\n")
 end
 tfile:close()
---os.execute("uci set custom.bwday.bwday=" .. calc(ktotal) .. ";uci commit custom")
