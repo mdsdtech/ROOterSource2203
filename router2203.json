@@ -46,15 +46,15 @@
 			"files": "/huasifei/files7915/"	
 		}
 	},
-	"WS1688": {
-		"details": "WS1688AX",
+	"WS1688-16": {
+		"details": "Huasifei WS1688AX-16",
 		"type": "1",
 		"build": "2102",
 		"package": "ext-huasifei",
 		"config": ".config_ws1688",
 		"image": "openwrt-ramips-mt7621-ws1688-squashfs-sysupgrade.bin",
 		"imagepath": "/ramips/mt7621/",
-		"mod": "WS1688AX",
+		"mod": "Huasifei-WS1688AX-16",
 		"ext": "-upgrade.bin",
 		"addons": ["readme.pdf"],
 		"custom": {
@@ -76,14 +76,14 @@
 		}
 	},
 	"WS1688-32": {
-		"details": "WS1688AX-32",
+		"details": "Huasifei WS1688AX-32",
 		"type": "1",
 		"build": "2102",
 		"package": "ext-huasifei",
 		"config": ".config_ws1688-32",
 		"image": "openwrt-ramips-mt7621-ws1688-32-squashfs-sysupgrade.bin",
 		"imagepath": "/ramips/mt7621/",
-		"mod": "WS1688AX-32",
+		"mod": "Huasifei-WS1688AX-32",
 		"ext": "-upgrade.bin",
 		"addons": ["readme.pdf"],
 		"custom": {
@@ -175,14 +175,14 @@
 			"files": "/hc952/files/"
 		}
 	},
-	"WG1608": {
-		"details": "ZBT WG1608",
+	"WG1608-16": {
+		"details": "ZBT WG1608-16",
 		"type": "1",
 		"build": "2203",
 		"config": ".config_wg1608",
 		"image": "openwrt-ramips-mt7621-zbtlink_zbt-wg1608-16m-squashfs-sysupgrade.bin",
 		"imagepath": "/ramips/mt7621/",
-		"mod": "ZBT-WG1608",
+		"mod": "ZBT-WG1608-16",
 		"ext": "-upgrade.bin",
 		"addons": ["readme.pdf", "readmerecovery.txt"]
 	},
@@ -262,27 +262,15 @@
 		"ext2": "-update.bin",
 		"addons": ["readme.pdf", "factory.txt"]
 	},
-	"H721": {
-		"details": "DualQ H721",
+	"H721-2203": {
+		"details": "DualQ H721-2203",
 		"type": "1",
 		"build": "2203",
 		"config": ".config_h721",
 		"package": "ext-mk01k21",
 		"image": "openwrt-ramips-mt7621-dualq_H721-16m-squashfs-sysupgrade.bin",
 		"imagepath": "/ramips/mt7621/",
-		"mod": "DualQ-H721",
-		"ext": "-upgrade.bin",
-		"addons": ["readme.pdf", "readmerecovery.txt"]
-	},
-	"H721AX": {
-		"details": "DualQ H721AX",
-		"type": "1",
-		"build": "2203",
-		"config": ".config_h721ax",
-		"package": "ext-mk01k21",
-		"image": "openwrt-ramips-mt7621-dual-q_h721-squashfs-sysupgrade.bin",
-		"imagepath": "/ramips/mt7621/",
-		"mod": "DualQ-H721AX",
+		"mod": "DualQ-H721-2203",
 		"ext": "-upgrade.bin",
 		"addons": ["readme.pdf", "readmerecovery.txt"]
 	},
@@ -484,13 +472,13 @@
 		}
 	},
 	"WS1208V2-32": {
-		"details": "Huasifei WS1208V2-32",
+		"details": "Huasifei WS1208v2-32",
 		"type": "1",
 		"package": "ext-huasifei",
 		"config": ".config_ws1208v2-32",
 		"image": "openwrt-ramips-mt7621-huasifei-ws1208v2-32-squashfs-sysupgrade.bin",
 		"imagepath": "/ramips/mt7621/",
-		"mod": "Huasifei-WS1208V2-32",
+		"mod": "Huasifei-WS1208v2-32",
 		"ext": "-upgrade.bin",
 		"custom": {
 			"name": {
@@ -522,11 +510,68 @@
 		"addons": ["readme.pdf", "glinet.txt"]
 	},
 	"Z2101AX": {
+		"details": "ZBT Z2101AX",
 		"type": "1",
 		"config": ".config_z2101ax",
 		"imagepath": "/ramips/mt7621/",
-		"mod": "Z2101AX",
+		"mod": "ZBT-Z2101AX",
 		"image": "openwrt-ramips-mt7621-zbliink_zbt-z2101ax-squashfs-sysupgrade.bin",
+		"ext": "-upgrade.bin"
+	},
+	"AR300M16": {
+		"details": "Gl.iNet AR300M-16",
+		"type": "1",
+		"build": "2203",
+		"config": ".config_ar300m16",
+		"image": "openwrt-ath79-generic-glinet_gl-ar300m16-squashfs-sysupgrade.bin",
+		"imagepath": "/ath79/generic/",
+		"mod": "GL-AR300M-16",
+		"ext": "-upgrade.bin",
+		"addons": ["readme.pdf", "glinet.txt"]
+	},
+	"DIR853R1": {
+		"details": "Dlink DIR853 R1",
+		"type": "1",
+		"build": "2203",
+		"config": ".config_dir853r1",
+		"image": "openwrt-ramips-mt7621-dlink_dir-853-r1-squashfs-sysupgrade.bin",
+		"imagepath": "/ramips/mt7621/",
+		"mod": "Dlink-DIR853-R1",
+		"ext": "-upgrade.bin",
+		"addons": ["readme.pdf", "readmerecovery.txt"]
+	},
+	"Z2105AX": {
+		"details": "ZBT Z2105AX",
+		"type": "1",
+		"config": ".config_z2105ax",
+		"imagepath": "/ramips/mt7621/",
+		"mod": "ZBT-Z2105AX",
+		"image": "openwrt-ramips-mt7621-zbliink_zbt-z2101ax-squashfs-sysupgrade.bin",
+		"ext": "-upgrade.bin",
+		"custom": {
+			"name": {
+				"model": "ZBT Z2105AX"
+			}
+		}
+	},
+	"YOUKUYK1": {
+		"details": "YOUKU YK1",
+		"type": "1",
+		"config": ".config_youkuyk1",
+		"image": "openwrt-ramips-mt7620-youku_yk-l1-squashfs-sysupgrade.bin",
+		"imagepath": "/ramips/mt7620/",
+		"mod": "YOUKU-YK1",
+		"ext": "-upgrade.bin",
+		"addons": ["readme.pdf", "factory.txt"]
+	},
+	"E8450": {
+		"details": "Linksys E8450",
+		"type": "1",
+		"build": "2203",
+		"config": ".config_e8450",
+		"image": "openwrt-mediatek-mt7622-linksys_e8450-squashfs-sysupgrade.bin",
+		"imagepath": "/mediatek/mt7622/",
+		"mod": "Linksys-E8450",
 		"ext": "-upgrade.bin"
 	}
 }
